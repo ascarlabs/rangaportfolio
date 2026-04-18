@@ -52,7 +52,7 @@ git remote add origin https://github.com/<you>/ranga-portfolio.git
 git push -u origin main
 ```
 
-3. In the repo **Settings → Pages**, set **Source: GitHub Actions**.
+3. In the repo **Settings → Pages**, set **Source: `GitHub Actions`** — **not** “Deploy from a branch”. (Branch mode looks for `index.html` at the repo root; this app is built by CI into `out/`.)
 4. The workflow at `.github/workflows/deploy.yml` builds and deploys on every push to `main`.
    Your site will appear at `https://<you>.github.io/ranga-portfolio/`.
 
