@@ -40,6 +40,7 @@ export default function TalkingAvatar({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const videoAutoplayTried = useRef(false);
+  const unmuteGestureCleanup = useRef<(() => void) | null>(null);
 
   const videoUrl = useMemo(() => publicAsset(videoSrc), [videoSrc]);
   const audioUrl = useMemo(() => publicAsset(audioSrc), [audioSrc]);
@@ -134,19 +135,58 @@ export default function TalkingAvatar({
     setSpeaking(true);
   }, [chosenVoice, muted, speaking, stop, text]);
 
+  const attachUnmuteOnFirstGesture = useCallback(() => {
+    if (unmuteGestureCleanup.current) return;
+    const unmute = () => {
+      const el = videoRef.current;
+      if (el) {
+        el.muted = false;
+        void el.play().catch(() => {});
+      }
+      window.removeEventListener('pointerdown', unmute, true);
+      window.removeEventListener('keydown', unmute, true);
+      unmuteGestureCleanup.current = null;
+    };
+    window.addEventListener('pointerdown', unmute, { capture: true, passive: true });
+    window.addEventListener('keydown', unmute, { capture: true });
+    unmuteGestureCleanup.current = () => {
+      window.removeEventListener('pointerdown', unmute, true);
+      window.removeEventListener('keydown', unmute, true);
+    };
+  }, []);
+
+  /**
+   * Browsers block unmuted autoplay without a user gesture. We try sound first;
+   * if that fails, muted autoplay always works — then first tap/key unmutes.
+   */
   const tryAutoplayVideoOnce = useCallback(() => {
     const v = videoRef.current;
     if (!v || videoAutoplayTried.current) return;
     videoAutoplayTried.current = true;
+
     v.muted = false;
-    void v.play().then(() => setSpeaking(true)).catch(() => {
-      videoAutoplayTried.current = false;
-    });
-  }, []);
+    void v
+      .play()
+      .then(() => setSpeaking(true))
+      .catch(() => {
+        v.muted = true;
+        void v
+          .play()
+          .then(() => {
+            setSpeaking(true);
+            attachUnmuteOnFirstGesture();
+          })
+          .catch(() => {
+            videoAutoplayTried.current = false;
+          });
+      });
+  }, [attachUnmuteOnFirstGesture]);
 
   const replayVideo = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
+    unmuteGestureCleanup.current?.();
+    unmuteGestureCleanup.current = null;
     v.pause();
     v.currentTime = 0;
     v.muted = false;
@@ -161,6 +201,23 @@ export default function TalkingAvatar({
   };
 
   useEffect(() => () => stop(), [stop]);
+
+  useEffect(() => {
+    return () => {
+      unmuteGestureCleanup.current?.();
+      unmuteGestureCleanup.current = null;
+    };
+  }, []);
+
+  // If <video> is served from cache, onLoadedData may not fire — retry autoplay when ready.
+  useEffect(() => {
+    if (!isVideoMode) return;
+    const id = window.setTimeout(() => {
+      const el = videoRef.current;
+      if (el && el.readyState >= 2 && !videoAutoplayTried.current) tryAutoplayVideoOnce();
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [isVideoMode, tryAutoplayVideoOnce]);
 
   return (
     <div className="relative w-full flex flex-col items-center">
@@ -189,7 +246,9 @@ export default function TalkingAvatar({
                 className="h-full w-full object-cover pointer-events-none"
                 playsInline
                 preload="auto"
+                autoPlay
                 onLoadedData={tryAutoplayVideoOnce}
+                onCanPlay={tryAutoplayVideoOnce}
                 onPlay={() => setSpeaking(true)}
                 onPause={() => setSpeaking(false)}
                 onEnded={() => setSpeaking(false)}
