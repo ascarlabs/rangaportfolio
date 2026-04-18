@@ -188,7 +188,7 @@ function heuristicParse(text, fallbackName = 'Your Name') {
     title: experience[0]?.role || 'Software Engineer',
     tagline: 'Turning ideas into shipped products.',
     location: '',
-    photo: '/photo.jpg',
+    photo: 'photo.jpg',
     email,
     phone,
     links: { github, linkedin, website },
@@ -624,9 +624,9 @@ async function main() {
     portfolio = ai || heuristic;
 
     if (photoPath) {
-      portfolio.photo = `/photo${path.extname(photoPath).toLowerCase()}`;
+      portfolio.photo = `photo${path.extname(photoPath).toLowerCase()}`;
     } else if (!portfolio.photo) {
-      portfolio.photo = '/photo.svg';
+      portfolio.photo = 'photo.svg';
     }
 
     if (!portfolio.spokenIntro || portfolio.spokenIntro.length < 20) {

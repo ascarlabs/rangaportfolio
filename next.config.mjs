@@ -3,13 +3,14 @@
 // If you later move to Vercel, you can remove `output: 'export'` and `images.unoptimized`.
 const isGithubPages = process.env.GITHUB_PAGES === 'true';
 const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? '';
+const basePathSegment = isGithubPages && repoName ? `/${repoName}` : '';
 
 const nextConfig = {
   output: 'export',
   images: { unoptimized: true },
   trailingSlash: true,
-  basePath: isGithubPages && repoName ? `/${repoName}` : '',
-  assetPrefix: isGithubPages && repoName ? `/${repoName}/` : '',
+  basePath: basePathSegment,
+  assetPrefix: basePathSegment ? `${basePathSegment}/` : '',
 };
 
 export default nextConfig;

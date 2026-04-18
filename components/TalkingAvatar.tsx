@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { publicAsset } from '@/lib/assetPath';
 
 /**
  * Providers:
@@ -28,8 +29,8 @@ export default function TalkingAvatar({
   text,
   name,
   provider = 'webspeech',
-  audioSrc = '/intro.mp3',
-  videoSrc = '/intro.mp4',
+  audioSrc = 'intro.mp3',
+  videoSrc = 'intro.mp4',
 }: Props) {
   const [speaking, setSpeaking] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -40,12 +41,18 @@ export default function TalkingAvatar({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const videoAutoplayTried = useRef(false);
 
+  const videoUrl = useMemo(() => publicAsset(videoSrc), [videoSrc]);
+  const audioUrl = useMemo(() => publicAsset(audioSrc), [audioSrc]);
+  const photoUrl = useMemo(() => publicAsset(photo), [photo]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (typeof window === 'undefined') return;
-      const check = async (url: string) => {
+      const check = async (path: string) => {
         try {
+          const rel = publicAsset(path);
+          const url = rel.startsWith('http') ? rel : new URL(rel, window.location.href).href;
           const r = await fetch(url, { method: 'HEAD' });
           return r.ok;
         } catch {
@@ -53,14 +60,14 @@ export default function TalkingAvatar({
         }
       };
       if (provider === 'video' || provider === 'did') {
-        const has = await check(videoSrc);
+        const has = await check(videoUrl);
         if (!has) {
-          const hasAudio = await check(audioSrc);
+          const hasAudio = await check(audioUrl);
           if (!cancelled) setEffectiveProvider(hasAudio ? 'openai' : 'webspeech');
           return;
         }
       } else if (provider === 'openai') {
-        const has = await check(audioSrc);
+        const has = await check(audioUrl);
         if (!has && !cancelled) setEffectiveProvider('webspeech');
         return;
       }
@@ -69,7 +76,7 @@ export default function TalkingAvatar({
     return () => {
       cancelled = true;
     };
-  }, [provider, audioSrc, videoSrc]);
+  }, [provider, audioUrl, videoUrl]);
 
   const chosenVoice = useMemo(
     () =>
@@ -177,8 +184,8 @@ export default function TalkingAvatar({
             {isVideoMode ? (
               <video
                 ref={videoRef}
-                src={videoSrc}
-                poster={photo}
+                src={videoUrl}
+                poster={photoUrl}
                 className="h-full w-full object-cover pointer-events-none"
                 playsInline
                 preload="auto"
@@ -189,7 +196,7 @@ export default function TalkingAvatar({
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt={name} className="h-full w-full object-cover" />
+              <img src={photoUrl} alt={name} className="h-full w-full object-cover" />
             )}
 
             {speaking && !isVideoMode && (
@@ -210,7 +217,7 @@ export default function TalkingAvatar({
       </div>
 
       {chosenVoice === 'audio' && (
-        <audio ref={audioRef} src={audioSrc} onEnded={() => setSpeaking(false)} preload="auto" />
+        <audio ref={audioRef} src={audioUrl} onEnded={() => setSpeaking(false)} preload="auto" />
       )}
 
       {!isVideoMode && (

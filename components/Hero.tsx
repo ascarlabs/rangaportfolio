@@ -60,8 +60,8 @@ export default function Hero({ data }: { data: Portfolio }) {
               text={data.spokenIntro}
               name={data.name}
               provider="video"
-              audioSrc="/intro.mp3"
-              videoSrc="/intro.mp4"
+              audioSrc="intro.mp3"
+              videoSrc="intro.mp4"
             />
           </div>
         </div>
