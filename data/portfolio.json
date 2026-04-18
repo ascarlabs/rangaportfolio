@@ -1,0 +1,90 @@
+{
+  "name": "Rangaswamy Yagateela",
+  "title": "SAP BTP CAPM Developer",
+  "tagline": "Results-driven SAP BTP CAPM Developer with 3+ years of hands-on experience designing and deploying cloud-native applications.",
+  "location": "Irving, Texas, USA",
+  "email": "rangaswamy71506@gmail.com",
+  "phone": "+1 682-407-4466",
+  "links": {
+    "github": "",
+    "linkedin": "",
+    "website": ""
+  },
+  "summary": "Results-driven SAP BTP CAPM Developer with 3+ years of hands-on experience designing and deploying cloud-native applications on the SAP Business Technology Platform (BTP). Highly proficient in the SAP Cloud Application Programming Model (CAPM) using Node.js and advanced Core Data Services (CDS) modeling. Proven ability to build robust OData V4 services, model complex SAP HANA Cloud databases, and seamlessly integrate backend services with SAP S/4HANA and frontend applications.",
+  "spokenIntro": "Hi, I'm Rangaswamy. I'm a passionate SAP BTP CAPM Developer with over three years of experience in creating cloud-native applications. I specialize in the SAP Cloud Application Programming Model and have a strong background in integrating complex systems. I thrive on solving challenges and delivering solutions that enhance business operations. I'm excited to connect and share my journey in the tech world.",
+  "experience": [
+    {
+      "company": "Anand PAG",
+      "role": "SAP BTP CAPM Developer",
+      "start": "Mar 2025",
+      "end": "Present",
+      "location": "Irving, Texas, USA",
+      "highlights": [
+        "Developed a secure and scalable cloud-based Vendor Portal on SAP BTP using CAP (Node.js), enabling external vendors to access services without direct SAP S/4 backend access.",
+        "Designed a two-layer data architecture using CDS to process OData payloads from S/4HANA into staging and transactional layers, ensuring data integrity and reliability.",
+        "Modeled complex relational data structures in SAP HANA Cloud using CDS, organizing entities into staging, master, transactional, and user domains.",
+        "Implemented row-level security and instance-based authorization using XSUAA scopes, ensuring strict data isolation for multi-vendor environments.",
+        "Built and exposed modular OData V4 services for vendor operations, administrative functions, and system integrations.",
+        "Integrated SAP CPI for real-time updates with S/4HANA, SAP DMS for document management, and SAP ADS for dynamic PDF generation."
+      ]
+    },
+    {
+      "company": "Tata Consultancy Services (TCS)",
+      "role": "SAP BTP Developer",
+      "start": "May 2021",
+      "end": "May 2023",
+      "location": "Hyderabad, India",
+      "highlights": [
+        "Developed a side-by-side cloud extension on SAP BTP using CAP to enhance analytical capabilities for sales and order data.",
+        "Designed and implemented CDS-based data models with associations and compositions for complex order management scenarios.",
+        "Created and exposed OData V4 services to support high-performance analytical dashboards.",
+        "Implemented business logic using Node.js event handlers for data transformation and validation.",
+        "Integrated XSUAA for role-based access control, ensuring secure and controlled data access.",
+        "Optimized data retrieval performance by implementing efficient CDS views and query structures, reducing response time for analytical reports.",
+        "Collaborated with cross-functional teams to gather business requirements and deliver scalable solutions aligned with client needs."
+      ]
+    }
+  ],
+  "skills": {
+    "Core Technologies": [
+      "SAP BTP",
+      "SAP CAPM (Node.js)",
+      "Core Data Services (CDS)",
+      "SAP HANA Cloud"
+    ],
+    "Programming Languages": [
+      "JavaScript",
+      "TypeScript",
+      "Node.js",
+      "SQL"
+    ],
+    "Web Services & APIs": [
+      "OData V4/V2",
+      "RESTful APIs",
+      "JSON"
+    ],
+    "Integration & Security": [
+      "SAP Cloud Integration (CPI)",
+      "SAP Document Management Service (DMS)",
+      "SAP Adobe Document Services (ADS)",
+      "XSUAA",
+      "IAS/Entra"
+    ],
+    "Tools": [
+      "SAP Business Application Studio (BAS)",
+      "Visual Studio Code",
+      "Git",
+      "Postman"
+    ]
+  },
+  "projects": [],
+  "education": [
+    {
+      "school": "Southern Arkansas University, Magnolia, AR",
+      "degree": "Master of Science in Computer and Information Science",
+      "start": "",
+      "end": ""
+    }
+  ],
+  "photo": "/photo.jpg"
+}

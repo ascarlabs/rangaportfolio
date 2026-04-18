@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+.env
+.env.local
+.elevenlabs-cache.json
+.hedra-cache.json
+.DS_Store
+*.log
+.vscode
+.idea
