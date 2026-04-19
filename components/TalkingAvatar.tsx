@@ -40,7 +40,10 @@ export default function TalkingAvatar({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const videoAutoplayTried = useRef(false);
-  const unmuteGestureCleanup = useRef<(() => void) | null>(null);
+  /** Browser allowed video autoplay only muted — waiting for any user gesture to unmute */
+  const [awaitingSoundUnlock, setAwaitingSoundUnlock] = useState(false);
+  /** Same click: document unmute runs in capture; skip avatar handler so we don’t restart the clip */
+  const unmuteHandledThisGesture = useRef(false);
 
   const videoUrl = useMemo(() => publicAsset(videoSrc), [videoSrc]);
   const audioUrl = useMemo(() => publicAsset(audioSrc), [audioSrc]);
@@ -135,29 +138,22 @@ export default function TalkingAvatar({
     setSpeaking(true);
   }, [chosenVoice, muted, speaking, stop, text]);
 
-  const attachUnmuteOnFirstGesture = useCallback(() => {
-    if (unmuteGestureCleanup.current) return;
-    const unmute = () => {
-      const el = videoRef.current;
-      if (el) {
-        el.muted = false;
-        void el.play().catch(() => {});
-      }
-      window.removeEventListener('pointerdown', unmute, true);
-      window.removeEventListener('keydown', unmute, true);
-      unmuteGestureCleanup.current = null;
-    };
-    window.addEventListener('pointerdown', unmute, { capture: true, passive: true });
-    window.addEventListener('keydown', unmute, { capture: true });
-    unmuteGestureCleanup.current = () => {
-      window.removeEventListener('pointerdown', unmute, true);
-      window.removeEventListener('keydown', unmute, true);
-    };
+  const unlockSound = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    unmuteHandledThisGesture.current = true;
+    queueMicrotask(() => {
+      unmuteHandledThisGesture.current = false;
+    });
+    v.muted = false;
+    void v.play().catch(() => {});
+    setAwaitingSoundUnlock(false);
+    setSpeaking(true);
   }, []);
 
   /**
    * Browsers block unmuted autoplay without a user gesture. We try sound first;
-   * if that fails, muted autoplay always works — then first tap/key unmutes.
+   * if that fails, muted autoplay works — then first click/tap anywhere unmutes.
    */
   const tryAutoplayVideoOnce = useCallback(() => {
     const v = videoRef.current;
@@ -167,47 +163,66 @@ export default function TalkingAvatar({
     v.muted = false;
     void v
       .play()
-      .then(() => setSpeaking(true))
+      .then(() => {
+        setSpeaking(true);
+        setAwaitingSoundUnlock(false);
+      })
       .catch(() => {
         v.muted = true;
         void v
           .play()
           .then(() => {
             setSpeaking(true);
-            attachUnmuteOnFirstGesture();
+            setAwaitingSoundUnlock(true);
           })
           .catch(() => {
             videoAutoplayTried.current = false;
           });
       });
-  }, [attachUnmuteOnFirstGesture]);
+  }, []);
 
   const replayVideo = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
-    unmuteGestureCleanup.current?.();
-    unmuteGestureCleanup.current = null;
+    setAwaitingSoundUnlock(false);
     v.pause();
     v.currentTime = 0;
     v.muted = false;
     void v.play().then(() => setSpeaking(true));
   }, []);
 
+  const handleAvatarPress = useCallback(() => {
+    if (unmuteHandledThisGesture.current) return;
+    if (awaitingSoundUnlock) {
+      unlockSound();
+      return;
+    }
+    replayVideo();
+  }, [awaitingSoundUnlock, unlockSound, replayVideo]);
+
+  // First click or tap anywhere on the page unmutes (browser requires a gesture for audio).
+  useEffect(() => {
+    if (!awaitingSoundUnlock || !isVideoMode) return;
+    const unlock = (e: Event) => {
+      if (e.type === 'click' && 'button' in e && (e as MouseEvent).button !== 0) return;
+      unlockSound();
+    };
+    document.addEventListener('click', unlock, { capture: true });
+    document.addEventListener('touchend', unlock, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener('click', unlock, true);
+      document.removeEventListener('touchend', unlock, true);
+    };
+  }, [awaitingSoundUnlock, isVideoMode, unlockSound]);
+
   const onVideoKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      replayVideo();
+      handleAvatarPress();
     }
   };
 
   useEffect(() => () => stop(), [stop]);
-
-  useEffect(() => {
-    return () => {
-      unmuteGestureCleanup.current?.();
-      unmuteGestureCleanup.current = null;
-    };
-  }, []);
 
   // If <video> is served from cache, onLoadedData may not fire — retry autoplay when ready.
   useEffect(() => {
@@ -227,11 +242,17 @@ export default function TalkingAvatar({
           className={`relative rounded-full p-[3px] bg-gradient-to-tr from-brand-500 via-accent-500 to-brand-400 ${
             speaking ? 'shadow-[0_0_60px_-10px_rgba(168,85,247,0.75)]' : ''
           } ${isVideoMode ? 'cursor-pointer' : ''}`}
-          onClick={isVideoMode ? replayVideo : undefined}
+          onClick={isVideoMode ? handleAvatarPress : undefined}
           onKeyDown={isVideoMode ? onVideoKeyDown : undefined}
           role={isVideoMode ? 'button' : undefined}
           tabIndex={isVideoMode ? 0 : undefined}
-          title={isVideoMode ? 'Click to replay introduction' : undefined}
+          title={
+            isVideoMode
+              ? awaitingSoundUnlock
+                ? 'Tap for sound'
+                : 'Click to replay introduction'
+              : undefined
+          }
         >
           <div
             className={`relative h-56 w-56 sm:h-64 sm:w-64 overflow-hidden rounded-full bg-ink-800 ${
@@ -239,20 +260,30 @@ export default function TalkingAvatar({
             }`}
           >
             {isVideoMode ? (
-              <video
-                ref={videoRef}
-                src={videoUrl}
-                poster={photoUrl}
-                className="h-full w-full object-cover pointer-events-none"
-                playsInline
-                preload="auto"
-                autoPlay
-                onLoadedData={tryAutoplayVideoOnce}
-                onCanPlay={tryAutoplayVideoOnce}
-                onPlay={() => setSpeaking(true)}
-                onPause={() => setSpeaking(false)}
-                onEnded={() => setSpeaking(false)}
-              />
+              <>
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  poster={photoUrl}
+                  className="h-full w-full object-cover pointer-events-none"
+                  playsInline
+                  preload="auto"
+                  autoPlay
+                  onLoadedData={tryAutoplayVideoOnce}
+                  onCanPlay={tryAutoplayVideoOnce}
+                  onPlay={() => setSpeaking(true)}
+                  onPause={() => setSpeaking(false)}
+                  onEnded={() => setSpeaking(false)}
+                />
+                {awaitingSoundUnlock && (
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-full bg-black/45 px-4 text-center">
+                    <Volume2 className="h-10 w-10 text-white drop-shadow-md" aria-hidden />
+                    <p className="text-xs font-medium leading-tight text-white drop-shadow">
+                      Tap anywhere or here for sound
+                    </p>
+                  </div>
+                )}
+              </>
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={photoUrl} alt={name} className="h-full w-full object-cover" />
